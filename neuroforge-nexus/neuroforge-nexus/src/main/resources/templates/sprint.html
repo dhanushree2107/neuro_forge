@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Sprints - NeuroForge Nexus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Top Header Bar -->
+<div class="header-bar">
+    <h1>
+        <i class="bi bi-layers-fill"></i>
+        NeuroForge Nexus
+    </h1>
+    <div class="header-milestone">
+        Milestone 1: Project & User Management
+    </div>
+    <div class="header-user-info" th:if="${currentUser != null}">
+        <span th:text="${currentUser.username + ' (' + currentUser.role.displayName + ')'}">Admin</span>
+        <span>|</span>
+        <a th:href="@{/logout}">Logout</a>
+    </div>
+</div>
+
+<div class="main-wrapper">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <a th:href="@{/dashboard}" class="sidebar-link">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a th:href="@{/projects}" class="sidebar-link">
+            <i class="bi bi-briefcase"></i> Projects
+        </a>
+        <a th:href="@{/sprints}" class="sidebar-link active">
+            <i class="bi bi-arrow-repeat"></i> Sprints
+        </a>
+        <a th:href="@{/teams}" class="sidebar-link">
+            <i class="bi bi-people"></i> Teams
+        </a>
+        <a href="#" class="sidebar-link" onclick="alert('CI/CD Service is a Milestone 2 module.'); return false;">
+            <i class="bi bi-terminal"></i> CI/CD
+        </a>
+        <a href="#" class="sidebar-link" onclick="alert('Testing Service is a Milestone 2 module.'); return false;">
+            <i class="bi bi-shield-check"></i> Testing
+        </a>
+        <a th:href="@{/milestones}" class="sidebar-link">
+            <i class="bi bi-flag"></i> Releases
+        </a>
+        <a href="#" class="sidebar-link" onclick="alert('DevOps Monitoring is a Milestone 3 module.'); return false;">
+            <i class="bi bi-activity"></i> Monitoring
+        </a>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="content-area">
+        <h2 class="page-title">Sprint Planning</h2>
+
+        <div th:if="${param.error == 'unauthorized'}" class="alert alert-danger">
+            <i class="bi bi-shield-slash-fill"></i>
+            <span>RBAC Enforcement: Only Administrators or Project Managers are authorized to plan sprints.</span>
+        </div>
+
+        <div th:if="${param.success == 'sprint_created'}" class="alert alert-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Sprint planned successfully!</span>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Sprints List -->
+            <div>
+                <div class="card-section">
+                    <h4>Planned & Active Sprints</h4>
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Sprint Name</th>
+                                    <th>Project</th>
+                                    <th>Tasks Count</th>
+                                    <th>Story Points</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="sprint : ${sprints}">
+                                    <td><strong th:text="${sprint.name}">Sprint 12</strong></td>
+                                    <td th:text="${sprint.project.name}">FinCore Nexus</td>
+                                    <td th:text="${sprint.tasksCount}">23</td>
+                                    <td th:text="${sprint.points}">67</td>
+                                    <td>
+                                        <span class="badge" 
+                                              th:classappend="${sprint.status == 'Active' ? 'badge-active' : (sprint.status == 'Completed' ? 'badge-completed' : 'badge-planning')}" 
+                                              th:text="${sprint.status}">Active</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plan Sprint Form (Restricted to Admin and PM via RBAC) -->
+            <div>
+                <!-- Authorized Section -->
+                <div class="card-section" th:if="${currentUser != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'PROJECT_MANAGER')}">
+                    <h4>Plan New Sprint</h4>
+                    <form th:action="@{/sprints/create}" th:object="${newSprint}" method="POST">
+                        <div class="form-group">
+                            <label for="sprintName">Sprint Name</label>
+                            <input type="text" id="sprintName" th:field="*{name}" class="form-control" required placeholder="e.g. Sprint 13">
+                        </div>
+                        <div class="form-group">
+                            <label for="projectId">Project</label>
+                            <select id="projectId" name="projectId" class="form-control" style="background-color: var(--bg-secondary); color: var(--text-primary);" required>
+                                <option th:each="project : ${projects}" th:value="${project.id}" th:text="${project.name}"></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="tasksCount">Total Tasks</label>
+                            <input type="number" id="tasksCount" th:field="*{tasksCount}" class="form-control" min="1" required placeholder="e.g. 15">
+                        </div>
+                        <div class="form-group">
+                            <label for="points">Total Story Points</label>
+                            <input type="number" id="points" th:field="*{points}" class="form-control" min="1" required placeholder="e.g. 45">
+                        </div>
+                        <div class="form-group">
+                            <label for="status">Sprint Status</label>
+                            <select id="status" th:field="*{status}" class="form-control" style="background-color: var(--bg-secondary); color: var(--text-primary);">
+                                <option value="Planning">Planning</option>
+                                <option value="Active">Active</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary w-100" style="width: 100%;">Plan Sprint</button>
+                    </form>
+                </div>
+
+                <!-- Unauthorized Lock Message -->
+                <div class="card-section" th:unless="${currentUser != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'PROJECT_MANAGER')}">
+                    <h4>Plan New Sprint</h4>
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                        <i class="bi bi-lock-fill" style="font-size: 48px; color: var(--text-muted); display: block; margin-bottom: 15px;"></i>
+                        <p style="margin: 0; font-size: 14px; font-weight: 500;">Role Restricted Section</p>
+                        <p style="margin: 5px 0 0 0; font-size: 12px;">Only Admins or Project Managers can plan sprints.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

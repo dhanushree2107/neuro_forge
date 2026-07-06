@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Teams - NeuroForge Nexus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Top Header Bar -->
+<div class="header-bar">
+    <h1>
+        <i class="bi bi-layers-fill"></i>
+        NeuroForge Nexus
+    </h1>
+    <div class="header-milestone">
+        Milestone 1: Project & User Management
+    </div>
+    <div class="header-user-info" th:if="${currentUser != null}">
+        <span th:text="${currentUser.username + ' (' + currentUser.role.displayName + ')'}">Admin</span>
+        <span>|</span>
+        <a th:href="@{/logout}">Logout</a>
+    </div>
+</div>
+
+<div class="main-wrapper">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <a th:href="@{/dashboard}" class="sidebar-link">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a th:href="@{/projects}" class="sidebar-link">
+            <i class="bi bi-briefcase"></i> Projects
+        </a>
+        <a th:href="@{/sprints}" class="sidebar-link">
+            <i class="bi bi-arrow-repeat"></i> Sprints
+        </a>
+        <a th:href="@{/teams}" class="sidebar-link active">
+            <i class="bi bi-people"></i> Teams
+        </a>
+        <a href="#" class="sidebar-link" onclick="alert('CI/CD Service is a Milestone 2 module.'); return false;">
+            <i class="bi bi-terminal"></i> CI/CD
+        </a>
+        <a href="#" class="sidebar-link" onclick="alert('Testing Service is a Milestone 2 module.'); return false;">
+            <i class="bi bi-shield-check"></i> Testing
+        </a>
+        <a th:href="@{/milestones}" class="sidebar-link">
+            <i class="bi bi-flag"></i> Releases
+        </a>
+        <a href="#" class="sidebar-link" onclick="alert('DevOps Monitoring is a Milestone 3 module.'); return false;">
+            <i class="bi bi-activity"></i> Monitoring
+        </a>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="content-area">
+        <h2 class="page-title">Team Management</h2>
+
+        <div th:if="${param.error == 'unauthorized'}" class="alert alert-danger">
+            <i class="bi bi-shield-slash-fill"></i>
+            <span>RBAC Enforcement: Only Administrators or Project Managers are authorized to modify teams.</span>
+        </div>
+
+        <div th:if="${param.success == 'team_created'}" class="alert alert-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Team created successfully!</span>
+        </div>
+
+        <div th:if="${param.success == 'member_assigned'}" class="alert alert-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Team member assigned successfully!</span>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Teams List -->
+            <div>
+                <div class="card-section">
+                    <h4>Active Teams & Members</h4>
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Team Name</th>
+                                    <th>Description</th>
+                                    <th>Current Members</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="team : ${teams}">
+                                    <td><strong th:text="${team.name}">Backend</strong></td>
+                                    <td th:text="${team.description}">Core service development.</td>
+                                    <td>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                            <span th:each="member : ${users}" 
+                                                  th:if="${member.team != null and member.team.id == team.id}" 
+                                                  class="badge badge-completed" 
+                                                  th:text="${member.username + ' (' + member.role.displayName + ')'}" 
+                                                  style="text-transform: none; font-size: 11px;">
+                                                dev
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Operations Forms (Restricted to Admin and PM via RBAC) -->
+            <div>
+                <!-- Authorized Section -->
+                <div th:if="${currentUser != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'PROJECT_MANAGER')}">
+                    <!-- Create Team -->
+                    <div class="card-section">
+                        <h4>Create Team</h4>
+                        <form th:action="@{/teams/create}" th:object="${newTeam}" method="POST">
+                            <div class="form-group">
+                                <label for="name">Team Name</label>
+                                <input type="text" id="name" th:field="*{name}" class="form-control" required placeholder="e.g. Data Analytics Team">
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <input type="text" id="description" th:field="*{description}" class="form-control" placeholder="Describe team duties...">
+                            </div>
+                            <button type="submit" class="btn-primary w-100" style="width: 100%;">Create Team</button>
+                        </form>
+                    </div>
+
+                    <!-- Assign Member to Team -->
+                    <div class="card-section" style="margin-top: 20px;">
+                        <h4>Assign Member to Team</h4>
+                        <form th:action="@{/teams/assign-member}" method="POST">
+                            <div class="form-group">
+                                <label for="userId">Select User</label>
+                                <select id="userId" name="userId" class="form-control" style="background-color: var(--bg-secondary); color: var(--text-primary);" required>
+                                    <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.username + ' (' + u.role.displayName + ')'}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="teamId">Select Team</label>
+                                <select id="teamId" name="teamId" class="form-control" style="background-color: var(--bg-secondary); color: var(--text-primary);" required>
+                                    <option th:each="team : ${teams}" th:value="${team.id}" th:text="${team.name}"></option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary w-100" style="width: 100%;">Assign Member</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Unauthorized Lock Message -->
+                <div th:unless="${currentUser != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'PROJECT_MANAGER')}">
+                    <div class="card-section">
+                        <h4>Manage Teams</h4>
+                        <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                            <i class="bi bi-lock-fill" style="font-size: 48px; color: var(--text-muted); display: block; margin-bottom: 15px;"></i>
+                            <p style="margin: 0; font-size: 14px; font-weight: 500;">Role Restricted Section</p>
+                            <p style="margin: 5px 0 0 0; font-size: 12px;">Only Admins or Project Managers can create teams or assign members.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

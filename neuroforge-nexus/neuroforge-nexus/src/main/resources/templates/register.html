@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Register - NeuroForge Nexus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="logo">
+            <i class="bi bi-person-plus-fill"></i>
+            <h2>Create Account</h2>
+            <p>NeuroForge Nexus IAM Registration</p>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span th:text="${errorMessage}">Error</span>
+        </div>
+
+        <form th:action="@{/register}" th:object="${user}" method="POST">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text"
+                       id="username"
+                       th:field="*{username}"
+                       class="form-control"
+                       placeholder="Enter username"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email"
+                       id="email"
+                       th:field="*{email}"
+                       class="form-control"
+                       placeholder="Enter email"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password"
+                       id="password"
+                       th:field="*{password}"
+                       class="form-control"
+                       placeholder="Create password"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="role">Assign Security Role</label>
+                <select id="role" th:field="*{role}" class="form-control" style="background-color: var(--bg-secondary); color: var(--text-primary);" required>
+                    <option th:each="r : ${roles}" th:value="${r}" th:text="${r.displayName}"></option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-primary w-100" style="width: 100%; margin-top: 10px;">
+                Register
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 14px;">
+            <span style="color: var(--text-secondary)">Already have an account? </span>
+            <a th:href="@{/login}" style="color: var(--accent-blue); text-decoration: none; font-weight: 600;">Log in here</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

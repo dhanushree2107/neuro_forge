@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - NeuroForge Nexus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Top Header Bar -->
+<div class="header-bar">
+    <h1>
+        <i class="bi bi-layers-fill"></i>
+        NeuroForge Nexus
+    </h1>
+    <div class="header-milestone">
+        Milestone 1: Project & User Management
+    </div>
+    <div class="header-user-info" th:if="${currentUser != null}">
+        <span th:text="${currentUser.username + ' (' + currentUser.role.displayName + ')'}">Admin</span>
+        <span>|</span>
+        <a th:href="@{/logout}">Logout</a>
+    </div>
+</div>
+
+<div class="main-wrapper">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <a th:href="@{/dashboard}" class="sidebar-link active">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a th:href="@{/projects}" class="sidebar-link">
+            <i class="bi bi-briefcase"></i> Projects
+        </a>
+        <a th:href="@{/sprints}" class="sidebar-link">
+            <i class="bi bi-arrow-repeat"></i> Sprints
+        </a>
+        <a th:href="@{/teams}" class="sidebar-link">
+            <i class="bi bi-people"></i> Teams
+        </a>
+        <a href="#" class="sidebar-link" onclick="alert('CI/CD Service is a Milestone 2 module.'); return false;">
+            <i class="bi bi-terminal"></i> CI/CD
+        </a>
+        <a href="#" class="sidebar-link" onclick="alert('Testing Service is a Milestone 2 module.'); return false;">
+            <i class="bi bi-shield-check"></i> Testing
+        </a>
+        <a th:href="@{/milestones}" class="sidebar-link">
+            <i class="bi bi-flag"></i> Releases
+        </a>
+        <a href="#" class="sidebar-link" onclick="alert('DevOps Monitoring is a Milestone 3 module.'); return false;">
+            <i class="bi bi-activity"></i> Monitoring
+        </a>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="content-area">
+        <h2 class="page-title">RBAC & Team Setup</h2>
+
+        <!-- Metrics Row -->
+        <div class="metrics-row">
+            <div class="metric-card">
+                <div class="title">Active Projects</div>
+                <div class="value" th:text="${projectsCount}">247</div>
+                <div class="status">Running</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">Users</div>
+                <div class="value" th:text="${usersCount}">2,847</div>
+                <div class="status">Registered</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">Teams</div>
+                <div class="value" th:text="${teamsCount}">47</div>
+                <div class="status">Active</div>
+            </div>
+        </div>
+
+        <!-- Detail Panel -->
+        <div class="info-panel" th:if="${activeProject != null}">
+            <h3>User Service - RBAC Management</h3>
+            
+            <div class="info-grid">
+                <div class="info-row">
+                    <span class="info-label">Project:</span>
+                    <span class="info-value" th:text="${activeProject.name}">FinCore Nexus</span>
+                    <span style="color: var(--text-muted); margin: 0 10px;">|</span>
+                    <span class="info-label" style="width: auto;">Status:</span>
+                    <span class="info-value" style="color: #10b981;" th:text="${activeProject.status}">Active</span>
+                    <span style="color: var(--text-muted); margin: 0 10px;">|</span>
+                    <span class="info-label" style="width: auto;">Team:</span>
+                    <span class="info-value" th:text="${activeProject.team != null ? activeProject.team.name : 'Unassigned'}">12</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">Users:</span>
+                    <span class="info-value" th:text="${teamUsersSummary}">Admin, PM, 5 Devs, 3 Testers, 2 DevOps</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">RBAC:</span>
+                    <span class="info-value" th:text="${rbacSummary}">Keycloak | Roles: Admin, PM, Dev, QA</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">Teams:</span>
+                    <span class="info-value" th:text="${teamsSummary}">Backend, Frontend, QA, DevOps</span>
+                </div>
+                
+                <div class="info-row" th:if="${activeSprint != null}">
+                    <span class="info-label">Sprint:</span>
+                    <span class="info-value" th:text="${activeSprint.name + ' | ' + activeSprint.tasksCount + ' tasks | ' + activeSprint.points + ' points'}">Sprint 12 | 23 tasks | 67 points</span>
+                </div>
+                
+                <div class="info-row" th:if="${activeMilestone != null}">
+                    <span class="info-label">Milestone:</span>
+                    <span class="info-value" th:text="${activeMilestone.name + ' | Due: ' + activeMilestone.dueDate}">Release 2.3 | Due: 20-Jun-2026</span>
+                </div>
+            </div>
+            
+            <div class="info-actions">
+                <a th:href="@{/projects}" class="btn-primary">[Create Project]</a>
+                <a th:href="@{/teams}" class="btn-primary">[Assign Team]</a>
+                <a th:href="@{/sprints}" class="btn-primary">[Plan Sprint]</a>
+            </div>
+        </div>
+        
+        <div class="info-panel" th:if="${activeProject == null}">
+            <h3>User Service - RBAC Management</h3>
+            <p>No active project found. Click below to initialize one.</p>
+            <div class="info-actions">
+                <a th:href="@{/projects}" class="btn-primary">Create First Project</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
