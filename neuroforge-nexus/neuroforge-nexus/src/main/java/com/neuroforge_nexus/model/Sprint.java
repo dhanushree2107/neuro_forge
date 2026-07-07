@@ -28,6 +28,10 @@ public class Sprint {
     @Column(nullable = false)
     private String status; // Active, Planning, Completed
 
+    private String goal;
+
+    private Integer daysLeft;
+
     @ManyToOne
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;

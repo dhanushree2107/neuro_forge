@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Sprints - NeuroForge Nexus</title>
+    <title>Agile Board & Tracking - NeuroForge Nexus</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/style.css}">
@@ -16,7 +16,7 @@
         NeuroForge Nexus
     </h1>
     <div class="header-milestone">
-        Milestone 1: Project & User Management
+        Milestone 2: Sprint & Task Management
     </div>
     <div class="header-user-info" th:if="${currentUser != null}">
         <span th:text="${currentUser.username + ' (' + currentUser.role.displayName + ')'}">Admin</span>
@@ -26,15 +26,15 @@
 </div>
 
 <div class="main-wrapper">
-    <!-- Sidebar Navigation -->
+    <!-- Sidebar Navigation (Highlighting Projects to match the requested image) -->
     <div class="sidebar">
         <a th:href="@{/dashboard}" class="sidebar-link">
             <i class="bi bi-speedometer2"></i> Dashboard
         </a>
-        <a th:href="@{/projects}" class="sidebar-link">
+        <a th:href="@{/sprints}" class="sidebar-link active">
             <i class="bi bi-briefcase"></i> Projects
         </a>
-        <a th:href="@{/sprints}" class="sidebar-link active">
+        <a th:href="@{/sprints}" class="sidebar-link">
             <i class="bi bi-arrow-repeat"></i> Sprints
         </a>
         <a th:href="@{/teams}" class="sidebar-link">
@@ -56,61 +56,235 @@
 
     <!-- Main Content Area -->
     <div class="content-area">
-        <h2 class="page-title">Sprint Planning</h2>
+        <h2 class="page-title">Agile Board & Tracking</h2>
 
         <div th:if="${param.error == 'unauthorized'}" class="alert alert-danger">
             <i class="bi bi-shield-slash-fill"></i>
-            <span>RBAC Enforcement: Only Administrators or Project Managers are authorized to plan sprints.</span>
+            <span>RBAC Enforcement: Only Administrators or Project Managers are authorized to perform this operation.</span>
         </div>
 
-        <div th:if="${param.success == 'sprint_created'}" class="alert alert-success">
+        <div th:if="${param.success == 'task_created'}" class="alert alert-success">
             <i class="bi bi-check-circle-fill"></i>
-            <span>Sprint planned successfully!</span>
+            <span>Task created successfully and published to Kafka topic!</span>
         </div>
 
-        <div class="dashboard-grid">
-            <!-- Sprints List -->
-            <div>
-                <div class="card-section">
-                    <h4>Planned & Active Sprints</h4>
-                    <div class="table-responsive">
-                        <table class="custom-table">
-                            <thead>
-                                <tr>
-                                    <th>Sprint Name</th>
-                                    <th>Project</th>
-                                    <th>Tasks Count</th>
-                                    <th>Story Points</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="sprint : ${sprints}">
-                                    <td><strong th:text="${sprint.name}">Sprint 12</strong></td>
-                                    <td th:text="${sprint.project.name}">FinCore Nexus</td>
-                                    <td th:text="${sprint.tasksCount}">23</td>
-                                    <td th:text="${sprint.points}">67</td>
-                                    <td>
-                                        <span class="badge" 
-                                              th:classappend="${sprint.status == 'Active' ? 'badge-active' : (sprint.status == 'Completed' ? 'badge-completed' : 'badge-planning')}" 
-                                              th:text="${sprint.status}">Active</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+        <div th:if="${param.success == 'task_moved'}" class="alert alert-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Task moved successfully. Kafka event logged.</span>
+        </div>
+
+        <div th:if="${param.success == 'task_blocked_updated'}" class="alert alert-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Blocker status updated and broadcast to Kafka topic.</span>
+        </div>
+
+        <!-- Metrics Row -->
+        <div class="metrics-row">
+            <div class="metric-card">
+                <div class="title">Sprints Completed</div>
+                <div class="value" th:text="${sprintsCompletedYear}">847</div>
+                <div class="status" style="color: var(--text-secondary);">This year</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">Velocity</div>
+                <div class="value" th:text="${velocityPoints}">67</div>
+                <div class="status" style="color: var(--text-secondary);">Points/sprint</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">Burndown</div>
+                <div class="value" th:text="${burndownPercent + '%'}">94%</div>
+                <div class="status">On track</div>
+            </div>
+        </div>
+
+        <!-- Mock Sprint Service Panel (Matching screenshot exactly) -->
+        <div class="info-panel" th:if="${activeSprint != null}">
+            <h3>Sprint Service - Kanban Board</h3>
+            
+            <div class="info-grid">
+                <div class="info-row">
+                    <span class="info-label" style="width: auto;">Sprint:</span>
+                    <span class="info-value" th:text="${activeSprint.name}">Sprint 12</span>
+                    <span style="color: var(--text-muted); margin: 0 10px;">|</span>
+                    <span class="info-label" style="width: auto;">Goal:</span>
+                    <span class="info-value" th:text="${activeSprint.goal}">Payment Service</span>
+                    <span style="color: var(--text-muted); margin: 0 10px;">|</span>
+                    <span class="info-label" style="width: auto;">Days:</span>
+                    <span class="info-value" th:text="${activeSprint.daysLeft + ' left'}">3 left</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-value" th:text="${'To Do: ' + toDoCount + ' tasks | In Progress: ' + inProgressCount + ' tasks | Done: ' + doneCount + ' tasks'}">To Do: 5 tasks | In Progress: 8 tasks | Done: 12 tasks</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-value" style="color: #60a5fa;">Task: PAY-247 | Payment API | Dev: John | 5 points</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-value" style="color: #34d399;">Kafka: Task event published | Assignee notified</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-value" th:text="${'Burndown: ' + donePoints + '/' + totalPoints + ' points | On track | Velocity: ' + velocityPoints}">Burndown: 67/80 points | On track | Velocity: 67</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-value" style="color: #f87171;">Blockers: 1 | DB migration pending | Escalated</span>
+                </div>
+            </div>
+            
+            <div class="info-actions">
+                <a href="#create-task-section" class="btn-primary">[Create Task]</a>
+                <a href="#kanban-section" class="btn-primary">[Move Card]</a>
+                <a href="#plan-sprint-section" class="btn-primary">[Start Sprint]</a>
+            </div>
+        </div>
+
+        <!-- 3-Column Kanban Board Section -->
+        <h3 id="kanban-section" style="margin-top: 40px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Sprint Kanban Board</h3>
+        
+        <div class="kanban-board" th:if="${activeSprint != null}">
+            <!-- To Do Column -->
+            <div class="kanban-column">
+                <div class="kanban-column-header">
+                    <span>To Do</span>
+                    <span class="badge badge-planning" th:text="${toDoCount}">5</span>
+                </div>
+                <div th:each="task : ${toDoTasks}" class="task-card" th:classappend="${task.blocked ? 'blocked' : ''}">
+                    <div class="task-header">
+                        <span class="task-key" th:text="${task.taskKey}">PAY-248</span>
+                        <span class="task-points" th:text="${task.points + ' pts'}">3 pts</span>
+                    </div>
+                    <div class="task-title" th:text="${task.title}">Payment Gateway Integration</div>
+                    <div class="task-footer">
+                        <span th:text="${task.assignee != null ? task.assignee.username : 'Unassigned'}">John</span>
+                        <div class="move-actions">
+                            <form th:action="@{/tasks/move}" method="POST">
+                                <input type="hidden" name="taskId" th:value="${task.id}">
+                                <input type="hidden" name="status" value="In Progress">
+                                <button type="submit" class="btn-primary" style="height: 26px; padding: 0 8px; font-size: 11px;">Start</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Plan Sprint Form (Restricted to Admin and PM via RBAC) -->
-            <div>
-                <!-- Authorized Section -->
-                <div class="card-section" th:if="${currentUser != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'PROJECT_MANAGER')}">
-                    <h4>Plan New Sprint</h4>
+            <!-- In Progress Column -->
+            <div class="kanban-column">
+                <div class="kanban-column-header">
+                    <span>In Progress</span>
+                    <span class="badge badge-active" th:text="${inProgressCount}">8</span>
+                </div>
+                <div th:each="task : ${inProgressTasks}" class="task-card" th:classappend="${task.blocked ? 'blocked' : ''}">
+                    <div class="task-header">
+                        <span class="task-key" th:text="${task.taskKey}">PAY-247</span>
+                        <span class="task-points" th:text="${task.points + ' pts'}">5 pts</span>
+                    </div>
+                    <div class="task-title" th:text="${task.title}">Payment API</div>
+                    <div th:if="${task.blocked}" style="font-size: 11px; color: #ef4444; margin-bottom: 8px;">
+                        <i class="bi bi-exclamation-octagon-fill"></i> Blocked: <span th:text="${task.blockerReason}">DB migration pending</span>
+                        <span class="badge badge-planning" style="font-size: 9px; padding: 1px 4px;" th:text="${task.blockerStatus}">Escalated</span>
+                    </div>
+                    <div class="task-footer">
+                        <span th:text="${task.assignee != null ? task.assignee.username : 'Unassigned'}">John</span>
+                        <div class="move-actions">
+                            <!-- Block/Unblock toggle (Restricted to Admin/PM) -->
+                            <span th:if="${currentUser != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'PROJECT_MANAGER')}">
+                                <form th:action="@{/tasks/block}" method="POST" style="margin-right: 4px;">
+                                    <input type="hidden" name="taskId" th:value="${task.id}">
+                                    <input type="hidden" name="isBlocked" th:value="${!task.blocked}">
+                                    <input type="hidden" name="blockerReason" value="Database migration pending">
+                                    <input type="hidden" name="blockerStatus" value="Escalated">
+                                    <button type="submit" class="btn-secondary" style="height: 26px; padding: 0 8px; font-size: 11px;" th:text="${task.blocked ? 'Unblock' : 'Block'}">Block</button>
+                                </form>
+                            </span>
+                            <form th:action="@{/tasks/move}" method="POST">
+                                <input type="hidden" name="taskId" th:value="${task.id}">
+                                <input type="hidden" name="status" value="Done">
+                                <button type="submit" class="btn-primary" style="height: 26px; padding: 0 8px; font-size: 11px;">Complete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Done Column -->
+            <div class="kanban-column">
+                <div class="kanban-column-header">
+                    <span>Done</span>
+                    <span class="badge badge-completed" th:text="${doneCount}">12</span>
+                </div>
+                <div th:each="task : ${doneTasks}" class="task-card">
+                    <div class="task-header">
+                        <span class="task-key" th:text="${task.taskKey}">PAY-235</span>
+                        <span class="task-points" th:text="${task.points + ' pts'}">3 pts</span>
+                    </div>
+                    <div class="task-title" th:text="${task.title}">Seeded Completed Task</div>
+                    <div class="task-footer">
+                        <span th:text="${task.assignee != null ? task.assignee.username : 'Unassigned'}">John</span>
+                        <span style="color: #10b981; font-weight: 600;"><i class="bi bi-check-circle-fill"></i> Completed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulated Kafka Event Log stream -->
+        <h3 style="margin-top: 40px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Kafka Event Stream Topic: task-events</h3>
+        <div class="console-log">
+            <div th:each="event : ${kafkaEvents}" class="console-line">
+                <span class="timestamp" th:text="${event.timestamp}">2026-07-06 18:00:00</span>
+                <span class="tag">[KAFKA-PRODUCER]</span>
+                <span th:text="${event.payload}">Task event details.</span>
+            </div>
+        </div>
+
+        <!-- Create Task and Plan Sprint Row -->
+        <div class="dashboard-grid" style="margin-top: 40px;">
+            <!-- Create Task (Restricted to Admin/PM) -->
+            <div id="create-task-section" class="card-section">
+                <h4>Create Task</h4>
+                <div th:if="${currentUser != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'PROJECT_MANAGER')}">
+                    <form th:action="@{/tasks/create}" method="POST">
+                        <input type="hidden" name="sprintId" th:value="${activeSprint != null ? activeSprint.id : ''}">
+                        <div class="form-group">
+                            <label for="taskKey">Task Key (e.g. PAY-260)</label>
+                            <input type="text" id="taskKey" name="taskKey" class="form-control" required placeholder="PAY-260">
+                        </div>
+                        <div class="form-group">
+                            <label for="title">Task Title</label>
+                            <input type="text" id="title" name="title" class="form-control" required placeholder="Implement token exchange">
+                        </div>
+                        <div class="form-group">
+                            <label for="points">Story Points</label>
+                            <input type="number" id="points" name="points" class="form-control" min="1" required placeholder="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="assigneeId">Assignee</label>
+                            <select id="assigneeId" name="assigneeId" class="form-control" style="background-color: var(--bg-secondary); color: var(--text-primary);">
+                                <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.username + ' (' + u.role.displayName + ')'}"></option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary w-100" style="width: 100%;">Create Task</button>
+                    </form>
+                </div>
+                <div th:unless="${currentUser != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'PROJECT_MANAGER')}">
+                    <div style="text-align: center; padding: 30px 10px; color: var(--text-muted);">
+                        <i class="bi bi-lock-fill" style="font-size: 36px; display: block; margin-bottom: 10px;"></i>
+                        <p style="font-size: 13px; font-weight: 500; margin: 0;">Role Restricted</p>
+                        <p style="font-size: 11px; margin: 5px 0 0 0;">Only Admins or PMs can create tasks.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start/Plan New Sprint (Restricted to Admin/PM) -->
+            <div id="plan-sprint-section" class="card-section">
+                <h4>Plan New Sprint</h4>
+                <div th:if="${currentUser != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'PROJECT_MANAGER')}">
                     <form th:action="@{/sprints/create}" th:object="${newSprint}" method="POST">
                         <div class="form-group">
                             <label for="sprintName">Sprint Name</label>
-                            <input type="text" id="sprintName" th:field="*{name}" class="form-control" required placeholder="e.g. Sprint 13">
+                            <input type="text" id="sprintName" th:field="*{name}" class="form-control" required placeholder="Sprint 13">
                         </div>
                         <div class="form-group">
                             <label for="projectId">Project</label>
@@ -119,32 +293,21 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="tasksCount">Total Tasks</label>
-                            <input type="number" id="tasksCount" th:field="*{tasksCount}" class="form-control" min="1" required placeholder="e.g. 15">
+                            <label for="goal">Sprint Goal</label>
+                            <input type="text" id="goal" th:field="*{goal}" class="form-control" placeholder="e.g. Payment Service Integration">
                         </div>
                         <div class="form-group">
-                            <label for="points">Total Story Points</label>
-                            <input type="number" id="points" th:field="*{points}" class="form-control" min="1" required placeholder="e.g. 45">
-                        </div>
-                        <div class="form-group">
-                            <label for="status">Sprint Status</label>
-                            <select id="status" th:field="*{status}" class="form-control" style="background-color: var(--bg-secondary); color: var(--text-primary);">
-                                <option value="Planning">Planning</option>
-                                <option value="Active">Active</option>
-                                <option value="Completed">Completed</option>
-                            </select>
+                            <label for="daysLeft">Sprint Duration (Days)</label>
+                            <input type="number" id="daysLeft" th:field="*{daysLeft}" class="form-control" min="1" placeholder="14">
                         </div>
                         <button type="submit" class="btn-primary w-100" style="width: 100%;">Plan Sprint</button>
                     </form>
                 </div>
-
-                <!-- Unauthorized Lock Message -->
-                <div class="card-section" th:unless="${currentUser != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'PROJECT_MANAGER')}">
-                    <h4>Plan New Sprint</h4>
-                    <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
-                        <i class="bi bi-lock-fill" style="font-size: 48px; color: var(--text-muted); display: block; margin-bottom: 15px;"></i>
-                        <p style="margin: 0; font-size: 14px; font-weight: 500;">Role Restricted Section</p>
-                        <p style="margin: 5px 0 0 0; font-size: 12px;">Only Admins or Project Managers can plan sprints.</p>
+                <div th:unless="${currentUser != null and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'PROJECT_MANAGER')}">
+                    <div style="text-align: center; padding: 30px 10px; color: var(--text-muted);">
+                        <i class="bi bi-lock-fill" style="font-size: 36px; display: block; margin-bottom: 10px;"></i>
+                        <p style="font-size: 13px; font-weight: 500; margin: 0;">Role Restricted</p>
+                        <p style="font-size: 11px; margin: 5px 0 0 0;">Only Admins or PMs can plan sprints.</p>
                     </div>
                 </div>
             </div>
